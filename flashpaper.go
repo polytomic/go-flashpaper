@@ -424,10 +424,14 @@ func main() {
 	var auth = flag.String("auth", "", "The auth filename.")
 	var token = flag.String("token", "", "The token link.")
 	var autocert = flag.Bool("autocert", false, "Whether to use Autocert or not.")
+	var externalTLS = flag.Bool("external-tls", false, "Whether TLS is terminated externally.")
+
 	flag.Parse()
 
 	// Check whether a token was specified. If not, it will get an empty string which is fine.
 	CANARYTOKEN = *token
+
+	fmt.Println("External TLS: ", *externalTLS)
 
 	if *token == "" {
 		fmt.Println("Token: False.")
@@ -448,10 +452,24 @@ func main() {
 
 	}
 
-	if *autocert {
+	port := "8443"
+	if p, ok := os.LookupEnv("PORT"); ok {
+		port = p
+	}
+	fmt.Println("Listening on: ", port)
+	if *externalTLS {
+		server := &http.Server{
+			Addr: fmt.Sprintf(":%s", port),
+		}
+
+		err := server.ListenAndServe()
+		if err != nil {
+			fmt.Printf("main(): %s\n", err)
+		}
+	} else if *autocert {
 		fmt.Println("AutoCert: True.")
 		server := &http.Server{
-			Addr: ":8443",
+			Addr: fmt.Sprintf(":%s", port),
 			TLSConfig: &tls.Config{
 				GetCertificate: certManager.GetCertificate,
 			},
@@ -466,7 +484,7 @@ func main() {
 	} else {
 		fmt.Println("AutoCert: False.")
 		//Key and cert are coming from Let's Encrypt.
-		err := http.ListenAndServeTLS(":8443", "server.crt", "server.key", nil)
+		err := http.ListenAndServeTLS(fmt.Sprintf(":%s", port), "server.crt", "server.key", nil)
 		if err != nil {
 			fmt.Printf("main(): %s\n", err)
 			fmt.Printf("Errors usually mean you don't have the required server.crt or server.key files.\n")
@@ -605,7 +623,7 @@ function finish() {
         </div>
 		<button id="copy" class="buttonSmall" onclick="copy()">Copy</button>
         <a id="done" onclick="finish()" class="buttonLarge buttonLargeSpec">Done</a>
-     
+
     </div>
 </div>
 
@@ -759,7 +777,7 @@ const inputtextform = `
 				</div>
 				<input class="buttonLarge buttonLargeSpec" type="submit" value="Submit">
 			<div/>
-		</form> 
+		</form>
     </div>
 </div>
 
@@ -832,7 +850,7 @@ function fileChecker(file) {
 	} catch (err) {
 		FileSize = 11;
 	}
-	
+
 	document.getElementById("submit").value="Submit";
 	if (FileSize > 10) {
 		document.getElementById("fileSizeError").innerHTML = "Please upload a file smaller than 10 Mb.";
@@ -909,7 +927,7 @@ function clear(text) {
 		<div class="box2">
 			<h4 id="link" onclick="copy()">%s://%s/%s</h4>
 		</div>
-        
+
         <button class="buttonSmall buttonSpec" id="copied" onclick="copy()">Copy</button>
 		<span style="color:gray;">&#183;</span>
 		<button class="buttonSmall buttonSpec" onClick="window.location.reload();">Generate another link</button>
@@ -924,12 +942,12 @@ function clear(text) {
 
 `
 const ascii = `
-___________.__                .__                                      
-\_   _____/|  | _____    _____|  |__ ___________  ______   ___________ 
+___________.__                .__
+\_   _____/|  | _____    _____|  |__ ___________  ______   ___________
  |    __)  |  | \__  \  /  ___/  |  \\____ \__  \ \____ \_/ __ \_  __ \
  |     \   |  |__/ __ \_\___ \|   Y  \  |_> > __ \|  |_> >  ___/|  | \/
- \___  /   |____(____  /____  >___|  /   __(____  /   __/ \___  >__|   
-     \/              \/     \/     \/|__|       \/|__|        \/     
+ \___  /   |____(____  /____  >___|  /   __(____  /   __/ \___  >__|
+     \/              \/     \/     \/|__|       \/|__|        \/
 
 Welcome to flashpaper!
 Your server has been started and is running...
