@@ -1,0 +1,8 @@
+services:
+  http:
+    build:
+      path: .
+    domain: ${HOST}
+    environment:
+      - "*"
+    port: ${PORT}
